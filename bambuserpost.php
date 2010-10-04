@@ -49,7 +49,7 @@ if (!class_exists('BambuserAutoposter')) {
             'postuser' => 1,
             'category'	=> 1,
             'maxposts' => 1,
-            'interval' => 1800,
+            'interval' => 30,
             'revision' => 1);
 
         var $o = array();
