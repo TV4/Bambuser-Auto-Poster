@@ -1,13 +1,42 @@
 <?php
 /*
 Plugin Name: Bambuser Auto-Poster
-Plugin URI: http://github.com/moonhouse/Bambuser-Auto-Poster
+Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall, parts of code from Mattias Norell
-Version: 0.17
+Version: 0.18
 Author URI: http://www.tv4.se/
 License: GPL2
 */
+
+/*
+ *  Bambuser Auto-Poster, Wordpress plugin to automatically make posts with Bambuser embeds.
+ *  Copyright (C) 2010 David Hall
+ *
+ * Parts of this program are based on "Bambuser for Wordpress - Shortcode" by Mattias Norell
+ * released under the GPL2 license. Copyright (C) 2010 Mattias Norell
+ *
+ * 
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * http://www.gnu.org/licenses/gpl-2.0.html
+ *
+ *
+ */
+
 
 if (!class_exists('BambuserAutoposter')) {
 
@@ -216,7 +245,8 @@ if (!class_exists('BambuserAutoposter')) {
                         $my_post = array(
                             'post_title' => $item->get_title(),
                             'post_content' => $this->get_shortcode($item->get_enclosure()->get_link()),
-                            'post_date' => date('Y-m-d H:i:s',intval($item->get_date('U'))+get_option( 'gmt_offset' ) * 3600),
+                            'post_date' => date('Y-m-d H:i:s',intval($item->get_date('U'))+get_option( 'gmt_offset' )
+                                    * 3600),
                             'post_status' => 'publish',
                             'post_author' => $this->o['postuser'],
                             'post_category' => array($this->o['category'])
