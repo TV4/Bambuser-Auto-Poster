@@ -3,19 +3,18 @@
 Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
-Author: David Hall, parts of code from Mattias Norell
-Version: 0.18
+Author: David Hall (TV4 AB), parts of code from Mattias Norell
+Version: 0.19
 Author URI: http://www.tv4.se/
 License: GPL2
 */
 
 /*
  *  Bambuser Auto-Poster, Wordpress plugin to automatically make posts with Bambuser embeds.
- *  Copyright (C) 2010 David Hall
+ *  Copyright (C) 2010 TV4 AB
  *
  * Parts of this program are based on "Bambuser for Wordpress - Shortcode" by Mattias Norell
  * released under the GPL2 license. Copyright (C) 2010 Mattias Norell
- *
  *
  *
  * This program is free software; you can redistribute it and/or
