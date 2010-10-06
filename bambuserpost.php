@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.19
+Version: 0.20
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -49,7 +49,8 @@ if (!class_exists('BambuserAutoposter')) {
             'category'	=> 1,
             'maxposts' => 1,
             'interval' => 30,
-            'revision' => 1);
+            'secret_key' => '',
+            'revision' => 2);
 
         var $o = array();
 
@@ -62,6 +63,32 @@ if (!class_exists('BambuserAutoposter')) {
             $this->o = get_option($this->opt_key);
         }
 
+        function parse_request($wp) {
+            if (array_key_exists('bambuser', $wp->query_vars)
+                    && $wp->query_vars['bambuser'] == 'post') {
+                if($this->is_authentic_request($wp->query_vars)) {
+                    wp_die('Authentic request to BambuserAutoposter!');
+                } else {
+                    wp_die('Request to BambuserAutoposter was not authentic!');
+                }
+            }
+        }
+
+        function query_vars($vars) {
+            $vars[] = 'bambuser';
+            $vars[] = 'method';
+            $vars[] = 'usertoken';
+            $vars[] = 'vid';
+            $vars[] = 'title';
+            $vars[] = 'type';
+            $vars[] = 'username';
+            $vars[] = 'created';
+            $vars[] = 'ts';
+            $vars[] = 'hash';
+            return $vars;
+        }
+
+
         function actions_filters() {
             add_filter('cron_schedules', array ( &$this, 'cron' ));
             add_action('tv4se_bambuser_event', array ( &$this, 'fetch_and_insert' ));
@@ -72,6 +99,8 @@ if (!class_exists('BambuserAutoposter')) {
             add_action('admin_menu', array ( &$this, 'settings_menu' ));
             add_shortcode('bambuser', array(&$this, 'shortcode'));
             add_filter('update_option_tv4se_bambuser_options',array(&$this, 'option_was_updated'),10,2);
+            add_action('parse_request', array(&$this, 'parse_request'));
+            add_filter('query_vars', array(&$this, 'query_vars'));
         }
 
         function option_was_updated($oldvalue, $newvalue) {
@@ -80,8 +109,16 @@ if (!class_exists('BambuserAutoposter')) {
                 $timestamp = wp_next_scheduled( 'tv4se_bambuser_event');
                 wp_unschedule_event($timestamp, 'tv4se_bambuser_event');
                 wp_schedule_event(time()+(60*interval), 'tv4se_bambuser_update', 'tv4se_bambuser_event');
-                // update cachetime
+                update_option($this->feed_cache_name(), (time()+(60*interval)-10));
             }
+        }
+
+        function feed_name() {
+            return 'http://feed.bambuser.com/channel/'.$this->o['username'].'.rss';
+        }
+
+        function feed_cache_name() {
+            return '_transient_timeout_feed_'.md5($this->feed_name());
         }
 
         function cron($schedules)
@@ -123,8 +160,8 @@ if (!class_exists('BambuserAutoposter')) {
         function cachetime($lifetime, $url) {
             $interval = intval($this->o['interval'])*60;
             if($interval==0) { $interval=1800; }
-            if ( $url==md5('http://feed.bambuser.com/channel/'.$this->o['username'].'.rss')) {
-                $lifetime = $interval-5;
+            if ( $url==md5($this->feed_name())) {
+                $lifetime = $interval-10;
             }
             return $lifetime;
         }
@@ -139,8 +176,10 @@ if (!class_exists('BambuserAutoposter')) {
             echo "<h2>Bambuser Autoposter Settings</h2>";
             $timestamp = wp_next_scheduled( 'tv4se_bambuser_event');
             $last_save = intval(get_option('tv4se_bambuser_lastpub'));
+            $cache_timeout = intval(get_option($this->feed_cache_name()));
             print "<p>Next update at ".date("Y-m-d H:i:s",$timestamp+get_option( 'gmt_offset' ) * 3600).'</p>';
             print '<p>Last clip from '.date("Y-m-d H:i:s",$last_save+get_option( 'gmt_offset' ) * 3600).'</p>';
+            print '<p>Feed cache times out at '.date("Y-m-d H:i:s",$cache_timeout+get_option( 'gmt_offset' ) * 3600).'</p>';
             echo '<form action="options.php" method="post">';
             settings_fields('tv4se_bambuser_options');
             do_settings_sections('bambuser');
@@ -162,6 +201,8 @@ if (!class_exists('BambuserAutoposter')) {
                 'bambuser', 'tv4se_bambuser_autoposter','maxposts');
             add_settings_field('tv4se_bambuser_field_5', 'Update interval', array ( &$this, 'field_display'), 'bambuser',
                 'tv4se_bambuser_autoposter','interval');
+            add_settings_field('tv4se_bambuser_field_6', 'Secret API key', array ( &$this, 'field_display'), 'bambuser',
+                'tv4se_bambuser_autoposter','secret_key');
 
         }
 
@@ -209,6 +250,10 @@ if (!class_exists('BambuserAutoposter')) {
                     echo "<input id='tv4se_bambuser_field' name='tv4se_bambuser_options[interval]' size='5' type='text'";
                     echo " value='{$this->o['interval']}' /> minutes";
                     break;
+                case "secret_key":
+                    echo "<input id='tv4se_bambuser_field' name='tv4se_bambuser_options[secret_key]' size='20' type='text'";
+                    echo " value='{$this->o['secret_key']}' />";
+                    break;
             }
 
         }
@@ -224,6 +269,7 @@ if (!class_exists('BambuserAutoposter')) {
             $newinput['category'] = intval($input['category']);
             $newinput['maxposts'] = intval($input['maxposts']);
             $newinput['interval'] = abs(intval($input['interval']));
+            $newinput['secret_key'] = $input['secret_key'];
             return $newinput;
         }
 
@@ -236,7 +282,7 @@ if (!class_exists('BambuserAutoposter')) {
         function fetch_and_insert(){
             $last_save = intval(get_option('tv4se_bambuser_lastpub'));
             $username = $this->o['username'];
-            $feed = fetch_feed("http://feed.bambuser.com/channel/$username.rss");
+            $feed = fetch_feed($this->feed_name());
             if($feed && $feed->get_items()) {
                 $maxitems = $this->o['maxposts'];
                 $items = array_slice($feed->get_items(), 0, $maxitems);
@@ -261,6 +307,23 @@ if (!class_exists('BambuserAutoposter')) {
 
                 endforeach;
             }
+        }
+
+        function is_authentic_request($vars) {
+            $secret_key = $this->o['secret_key'];
+            if(isset($secret_key) && isset($vars['method']) && isset($vars['vid']) && isset($vars['type']) && isset($vars['created'])) {
+                $my_hash = sha1(
+                    $secret_key
+                            . $vars['method']
+                            . $vars['vid']
+                            . $vars['type']
+                            . $vars['created']
+                );
+                if ($my_hash == $vars['hash']) {
+                    return TRUE;
+                }
+            }
+            return FALSE;
         }
 
         function shortcode($atts, $content=null) {
