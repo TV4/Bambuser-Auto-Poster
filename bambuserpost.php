@@ -123,7 +123,7 @@ if (!class_exists('BambuserAutoposter')) {
         function cachetime($lifetime, $url) {
             $interval = intval($this->o['interval'])*60;
             if($interval==0) { $interval=1800; }
-            if ( $interval < 43200 && false !== strpos( $url, 'feed.bambuser.com' ) ) {
+            if ( $url==md5('http://feed.bambuser.com/channel/'.$this->o['username'].'.rss')) {
                 $lifetime = $interval-5;
             }
             return $lifetime;
