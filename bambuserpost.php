@@ -53,18 +53,18 @@ if (!class_exists('BambuserAutoposter')) {
             'revision' => 3);
 
         var $o = array();
-        
+
         function BambuserAutoposter()
         {
             $this->read_options();
             $this->actions_filters();
         }
-        
+
         function read_options()
         {
             $this->o = get_option($this->opt_key);
         }
-        
+
         function parse_request($wp)
         {
             if (array_key_exists('bambuser', $wp->query_vars) && $wp->query_vars['bambuser'] == 'post') {
@@ -75,7 +75,7 @@ if (!class_exists('BambuserAutoposter')) {
                 }
             }
         }
-        
+
         function query_vars($vars)
         {
             $vars[] = 'bambuser';
@@ -90,8 +90,8 @@ if (!class_exists('BambuserAutoposter')) {
             $vars[] = 'hash';
             return $vars;
         }
-        
-        
+
+
         function actions_filters()
         {
             add_filter('cron_schedules', array(
@@ -139,7 +139,7 @@ if (!class_exists('BambuserAutoposter')) {
                 'query_vars'
             ));
         }
-        
+
         function option_was_updated($oldvalue, $newvalue)
         {
             if ($oldvalue['interval'] != $newvalue['interval']) {
@@ -150,24 +150,24 @@ if (!class_exists('BambuserAutoposter')) {
                 update_option($this->feed_cache_name(), (time() + (60 * interval) - 10));
             }
         }
-        
+
         function feed_name()
         {
             return 'http://feed.bambuser.com/channel/' . urlencode($this->o['username']) . '.rss';
         }
-        
+
         function feed_cache_name()
         {
             return '_transient_timeout_feed_' . md5($this->feed_name());
         }
-        
+
         function cron($schedules)
         {
             $interval = intval($this->o['interval']) * 60;
             if ($interval == 0) {
                 $interval = 1800;
             }
-            
+
             return array_merge($schedules, array(
                 'tv4se_bambuser_update' => array(
                     'interval' => $interval,
@@ -175,12 +175,12 @@ if (!class_exists('BambuserAutoposter')) {
                 )
             ));
         }
-        
-        
+
+
         function install_plugin()
         {
             $this->o = get_option($this->opt_key);
-            
+
             if (!is_array($this->o) || empty($this->o)) {
                 update_option($this->opt_key, $this->default_options);
                 $this->o = get_option($this->opt_key);
@@ -189,18 +189,18 @@ if (!class_exists('BambuserAutoposter')) {
                 $this->o["revision"] = $this->default_options["revision"];
                 update_option($this->opt_key, $this->o);
             }
-            
+
             if (!wp_next_scheduled('tv4se_bambuser_event')) {
                 wp_schedule_event(time() + 30, 'tv4se_bambuser_update', 'tv4se_bambuser_event');
             }
         }
-        
+
         function uninstall_plugin()
         {
             $timestamp = wp_next_scheduled('tv4se_bambuser_event');
             wp_unschedule_event($timestamp, 'tv4se_bambuser_event');
         }
-        
+
         function cachetime($lifetime, $url)
         {
             $interval = intval($this->o['interval']) * 60;
@@ -212,7 +212,7 @@ if (!class_exists('BambuserAutoposter')) {
             }
             return $lifetime;
         }
-        
+
         function settings_menu()
         {
             add_options_page('Bambuser Autoposter Settings', 'Bambuser Autoposter', 'manage_options', 'bambuser', array(
@@ -220,7 +220,7 @@ if (!class_exists('BambuserAutoposter')) {
                 'options_page'
             ));
         }
-        
+
         function options_page()
         {
             echo "<div>";
@@ -237,8 +237,8 @@ if (!class_exists('BambuserAutoposter')) {
             echo '<input name="Submit" type="submit" value="' . esc_attr('Save Changes') . '" />
 </form></div>';
         }
-        
-        
+
+
         function admin_init()
         {
             register_setting('tv4se_bambuser_options', 'tv4se_bambuser_options', array(
@@ -278,11 +278,11 @@ if (!class_exists('BambuserAutoposter')) {
                 &$this,
                 'field_display'
             ), 'bambuser', 'tv4se_bambuser_autoposter', 'secret_key');
-            
+
         }
-        
-        
-        
+
+
+
         function field_display($field)
         {
             switch ($field) {
@@ -302,7 +302,7 @@ if (!class_exists('BambuserAutoposter')) {
                     }
                     echo '</select>';
                     break;
-                
+
                 case "category":
                     echo '<select name="tv4se_bambuser_options[category]">';
                     $categories = get_categories();
@@ -335,14 +335,14 @@ if (!class_exists('BambuserAutoposter')) {
                     echo " value='{$this->o['secret_key']}' />";
                     break;
             }
-            
+
         }
-        
+
         function details_text()
         {
             echo "<p>Bambuser id information and post settings</p>";
         }
-        
+
         function options_validate($input)
         {
             preg_match("/[A-Za-z0-9\-_\.\ åäöéÅÄÖÉ]*/", $input['username'], $matches);
@@ -355,14 +355,14 @@ if (!class_exists('BambuserAutoposter')) {
             $newinput['default_title'] = $input['default_title'];
             return $newinput;
         }
-        
+
         function get_shortcode($link)
         {
             preg_match("/vid=([0-9]*)/", $link, $matches);
             $id = $matches[1];
             return '[bambuser id="' . $id . '"]';
         }
-        
+
         function fetch_metadata($id)
         {
             $apikey = $this->o['secret_key'];
@@ -378,17 +378,17 @@ if (!class_exists('BambuserAutoposter')) {
                 ));
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HEADER, 0);
-                
+
                 $json = curl_exec($ch);
-                
+
                 curl_close($ch);
-                
+
                 $json = json_decode($json);
                 set_transient("bambuser:$id", $json, 7 * 86400);
             }
             return $json;
         }
-        
+
         function fetch_and_insert()
         {
             $last_save = intval(get_option('tv4se_bambuser_lastpub'));
@@ -424,7 +424,7 @@ if (!class_exists('BambuserAutoposter')) {
                 endforeach;
             }
         }
-        
+
         function is_authentic_request($vars)
         {
             $secret_key = $this->o['secret_key'];
@@ -436,7 +436,7 @@ if (!class_exists('BambuserAutoposter')) {
             }
             return FALSE;
         }
-        
+
         function shortcode($atts, $content = null)
         {
             extract(shortcode_atts(array(
@@ -446,14 +446,14 @@ if (!class_exists('BambuserAutoposter')) {
                 'width' => '424',
                 'height' => '376'
             ), $atts));
-            
+
             if ($channel !== '' && $height == 376) {
                 $height = 500;
             }
             if ($playlist == 'show' && $height == 376) {
                 $height = 500;
             }
-            
+
             if (!is_numeric($id)) {
                 return '<iframe src="http://embed.bambuser.com/channel/' . $channel . '" width=".$width." height="' . $height . '" frameborder="0"><a href="">See Bambuser channel of ' . $channel . '</a></iframe>';
             } else {
@@ -464,12 +464,27 @@ if (!class_exists('BambuserAutoposter')) {
                     return '<iframe src="http://embed.bambuser.com/broadcast/' . $id . '" width="' . $width . '" height="' . $height . '" frameborder="0"><a href="http://bambuser.com/v/' . $id . '">See video on Bambuser"/></a></iframe>';
             }
         }
-        
-        
-        
+
+
+
     }
-    
+
     $bambuser_autoposter = new BambuserAutoposter();
-    
+
+}
+if ( is_admin() ) {
+	include_once( 'inc/_updater.php' );
+	$config = array(
+		'slug' => plugin_basename( __FILE__ ),
+		'proper_folder_name' => 'bambuserpost',
+		'api_url' => 'https://api.github.com/repos/TV4/Bambuser-Auto-Poster',
+		'raw_url' => 'https://raw.github.com/TV4/Bambuser-Auto-Poster/master',
+		'github_url' => 'https://github.com/TV4/Bambuser-Auto-Poster',
+		'zip_url' => 'https://github.com/TV4/Bambuser-Auto-Poster/zipball/master',
+		'requires' => '3.0',
+		'tested' => '3.4.1',
+		'readme' => 'README.md'
+	);
+	$github_updater = new wp_github_updater( $config );
 }
 ?>
