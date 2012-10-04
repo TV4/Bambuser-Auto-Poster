@@ -263,7 +263,7 @@ if (!class_exists('BambuserAutoposter')) {
         }
 
         function options_validate($input){
-            preg_match("/[A-Za-z0-9\-_\.\ ]*/", $input['username'], $matches);
+            preg_match("/[A-Za-z0-9\-_\.\ åäöéÅÄÖÉ]*/", $input['username'], $matches);
             $newinput['username'] = $matches[0];
             $newinput['postuser'] = intval($input['postuser']);
             $newinput['category'] = intval($input['category']);
