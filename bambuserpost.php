@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.23
+Version: 0.24
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -49,7 +49,8 @@ if (!class_exists('BambuserAutoposter')) {
             'maxposts' => 1,
             'interval' => 30,
             'secret_key' => '',
-            'revision' => 2);
+            'default_title' => 'Untitled broadcast',
+            'revision' => 3);
 
         var $o = array();
         
@@ -260,6 +261,11 @@ if (!class_exists('BambuserAutoposter')) {
                 &$this,
                 'field_display'
             ), 'bambuser', 'tv4se_bambuser_autoposter', 'category');
+            add_settings_field('tv4se_bambuser_field_7', 'Title for untitled broadcasts',
+             array(
+                &$this,
+                'field_display'
+            ), 'bambuser', 'tv4se_bambuser_autoposter', 'default_title');
             add_settings_field('tv4se_bambuser_field_4', 'Maximum posts to publish', array(
                 &$this,
                 'field_display'
@@ -312,6 +318,10 @@ if (!class_exists('BambuserAutoposter')) {
                     }
                     echo '</select>';
                     break;
+                case "default_title":
+                    echo "<input id='tv4se_bambuser_field' name='tv4se_bambuser_options[default_title]' size='20' type='text'";
+                    echo " value='{$this->o['default_title']}' />";
+                    break;
                 case "maxposts":
                     echo "<input id='tv4se_bambuser_field' name='tv4se_bambuser_options[maxposts]' size='5' type='text'";
                     echo " value='{$this->o['maxposts']}' />";
@@ -342,6 +352,7 @@ if (!class_exists('BambuserAutoposter')) {
             $newinput['maxposts']   = intval($input['maxposts']);
             $newinput['interval']   = abs(intval($input['interval']));
             $newinput['secret_key'] = $input['secret_key'];
+            $newinput['default_title'] = $input['default_title'];
             return $newinput;
         }
         
@@ -393,8 +404,13 @@ if (!class_exists('BambuserAutoposter')) {
                         if ($counter == 1) {
                             update_option('tv4se_bambuser_lastpub', intval($item->get_date('U')));
                         }
+                        if ($item->get_title() == 'Untitled broadcast') {
+	                        $title = $this->o['default_title'];
+                        } else {
+	                        $title = $item->get_title();
+                        }
                         $my_post = array(
-                            'post_title' => $item->get_title(),
+                            'post_title' => $title,
                             'post_content' => $this->get_shortcode($item->get_enclosure()->get_link()),
                             'post_date' => date('Y-m-d H:i:s', intval($item->get_date('U')) + get_option('gmt_offset') * 3600),
                             'post_status' => 'publish',
