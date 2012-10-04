@@ -353,14 +353,14 @@ if (!class_exists('BambuserAutoposter')) {
                 'channel' => '',
                 'playlist' => 'hide',
                 'width' 	=> '424',
-                'height' 	=> '321',
+                'height' 	=> '376',
             ), $atts));
 
-            if($channel !== '' && $height == 321){$height = 500;}
-            if($playlist=='show' && $height == 321){$height = 500;}
+            if($channel !== '' && $height == 376){$height = 500;}
+            if($playlist=='show' && $height == 376){$height = 500;}
 
             if (!is_numeric($id)){	
-            	return '<iframe src="http://embed.bambuser.com/channel/'.$channel.'" width=".$width." height="276" frameborder="0"><a href="">See Bambuser channel of '.$channel.'</a></iframe>';
+            	return '<iframe src="http://embed.bambuser.com/channel/'.$channel.'" width=".$width." height="'.$height.'" frameborder="0"><a href="">See Bambuser channel of '.$channel.'</a></iframe>';
             } else {
             	$metadata = $this->fetch_metadata($id)->result;
             	if($metadata)
