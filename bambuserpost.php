@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.21
+Version: 0.22
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -69,7 +69,7 @@ if (!class_exists('BambuserAutoposter')) {
                 if($this->is_authentic_request($wp->query_vars)) {
                     wp_die('Authentic request to BambuserAutoposter!');
                 } else {
-                    wp_die('Request to BambuserAutoposter was not authentic!');
+                   wp_die('Request to BambuserAutoposter was not authentic!'); 
                 }
             }
         }
@@ -112,14 +112,14 @@ if (!class_exists('BambuserAutoposter')) {
                 update_option($this->feed_cache_name(), (time()+(60*interval)-10));
             }
         }
-
+        
         function feed_name() {
-            return 'http://feed.bambuser.com/channel/'.$this->o['username'].'.rss';
-        }
-
-        function feed_cache_name() {
-            return '_transient_timeout_feed_'.md5($this->feed_name());
-        }
+        	return 'http://feed.bambuser.com/channel/'.$this->o['username'].'.rss';
+        	}
+        	
+      	function feed_cache_name() {
+      		return '_transient_timeout_feed_'.md5($this->feed_name());
+      	}
 
         function cron($schedules)
         {
@@ -253,7 +253,7 @@ if (!class_exists('BambuserAutoposter')) {
                 case "secret_key":
                     echo "<input id='tv4se_bambuser_field' name='tv4se_bambuser_options[secret_key]' size='20' type='text'";
                     echo " value='{$this->o['secret_key']}' />";
-                    break;
+                	break;
             }
 
         }
@@ -277,6 +277,27 @@ if (!class_exists('BambuserAutoposter')) {
             preg_match("/vid=([0-9]*)/", $link, $matches);
             $id = $matches[1];
             return '[bambuser id="'.$id.'"]';
+        }
+        
+        function fetch_metadata($id) {
+        $apikey = $this->o['secret_key'];
+        if(!$apikey) {return false;}
+        	if (false === ($json = get_transient("bambuser:$id"))) {
+        	    
+            	$ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, "http://api.bambuser.com/broadcast/$id.json?api_key=$apikey");
+                curl_setopt($ch,CURLOPT_HTTPHEADER, array ("Content-Type: application/json;charset=utf-8","Accept: application/json"));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HEADER, 0);
+
+                $json = curl_exec($ch);
+
+                curl_close($ch);
+
+                $json = json_decode($json);
+                set_transient("bambuser:$id", $json, 7*86400);
+			}
+			return $json;
         }
 
         function fetch_and_insert(){
@@ -310,19 +331,19 @@ if (!class_exists('BambuserAutoposter')) {
         }
 
         function is_authentic_request($vars) {
-            $secret_key = $this->o['secret_key'];
-            if(isset($secret_key) && isset($vars['method']) && isset($vars['vid']) && isset($vars['type']) && isset($vars['created'])) {
-                $my_hash = sha1(
-                    $secret_key
-                            . $vars['method']
-                            . $vars['vid']
-                            . $vars['type']
-                            . $vars['created']
-                );
-                if ($my_hash == $vars['hash']) {
-                    return TRUE;
-                }
+         	$secret_key = $this->o['secret_key'];
+        	if(isset($secret_key) && isset($vars['method']) && isset($vars['vid']) && isset($vars['type']) && isset($vars['created'])) {
+            $my_hash = sha1(
+                $secret_key
+                        . $vars['method']
+                        . $vars['vid']
+                        . $vars['type']
+                        . $vars['created']
+            );
+            if ($my_hash == $vars['hash']) {
+                return TRUE;
             }
+        	}
             return FALSE;
         }
 
@@ -338,20 +359,14 @@ if (!class_exists('BambuserAutoposter')) {
             if($channel !== '' && $height == 321){$height = 500;}
             if($playlist=='show' && $height == 321){$height = 500;}
 
-            if (!is_numeric($id)){
-                return '<object id="bplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="'.$width.'"'
-                        . 'height="'.$height.'"><embed name="bplayer"'
-                        . 'src="http://bambuser.com/r/player.swf?username='.urlencode($channel).'&context=b&autostart=no" type="application/x-shockwave-flash"'
-                        . 'width="'.$width.'" height="'.$height.'" allowfullscreen="true" wmode="opaque"></embed><param '
-                        . 'name="movie" value="http://bambuser.com/r/player.swf?username='.urlencode($channel).'&context=b&autostart=no"></param><param '
-                        . 'name="allowfullscreen" value="true"></param><param name="wmode" value="opaque"></param></object>';
+            if (!is_numeric($id)){	
+            	return '<iframe src="http://embed.bambuser.com/channel/'.$channel.'" width=".$width." height="276" frameborder="0"><a href="">See Bambuser channel of '.$channel.'</a></iframe>';
             } else {
-                return '<object id="bplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="'.$width.'"'
-                        . 'height="'.$height.'"><embed name="bplayer" src="http://static.bambuser.com/r/player.swf?vid='
-                        . urlencode($id).'&context=b&autostart=no" type="application/x-shockwave-flash" width="'.$width.'" height="'.$height.'"'
-                        . 'allowfullscreen="true" wmode="opaque"></embed><param name="movie" '
-                        . 'value="http://static.bambuser.com/r/player.swf?vid='.urlencode($id).'&context=b&autostart=no"></param><param name="allowfullscreen"'
-                        . 'value="true"></param><param name="wmode" value="opaque"></param></object>';
+            	$metadata = $this->fetch_metadata($id)->result;
+            	if($metadata)
+            	return '<iframe src="http://embed.bambuser.com/broadcast/'.$id.'" width="'.$width.'" height="'.$height.'" frameborder="0"><a href="http://bambuser.com/v/'.$id.'"><img src="'.$metadata->preview.'" alt="See video \''.$metadata->title.'\' by '.$metadata->username.' on Bambuser"/></a></iframe>';
+            	else
+            	return '<iframe src="http://embed.bambuser.com/broadcast/'.$id.'" width="'.$width.'" height="'.$height.'" frameborder="0"><a href="http://bambuser.com/v/'.$id.'">See video on Bambuser"/></a></iframe>';
             }
         }
 
