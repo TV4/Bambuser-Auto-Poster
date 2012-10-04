@@ -16,6 +16,8 @@ License: GPL2
  * Parts of this program are based on "Bambuser for Wordpress - Shortcode" by Mattias Norell
  * released under the GPL2 license. Copyright (C) 2010 Mattias Norell
  *
+ * Contains part of Joachim Kudish's "WordPress Github Plugin Updater"
+ *  https://github.com/jkudish/WordPress-GitHub-Plugin-Updater
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
