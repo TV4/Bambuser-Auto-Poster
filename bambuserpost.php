@@ -311,6 +311,10 @@ if (!class_exists('BambuserAutoposter')) {
                 foreach ( $items as $item ) :
                     $counter++;
                     if(intval($item->get_date('U')) > $last_save) {
+
+                    if($counter==1) {
+                            update_option('tv4se_bambuser_lastpub', intval($item->get_date('U')));
+                        }
                         $my_post = array(
                             'post_title' => $item->get_title(),
                             'post_content' => $this->get_shortcode($item->get_enclosure()->get_link()),
@@ -321,9 +325,6 @@ if (!class_exists('BambuserAutoposter')) {
                             'post_category' => array($this->o['category'])
                         );
                         $post_id = wp_insert_post( $my_post );
-                        if($counter==1) {
-                            update_option('tv4se_bambuser_lastpub', $item->get_date('U'));
-                        }
                     }
 
                 endforeach;
