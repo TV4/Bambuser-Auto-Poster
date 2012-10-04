@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.20
+Version: 0.21
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -341,16 +341,16 @@ if (!class_exists('BambuserAutoposter')) {
             if (!is_numeric($id)){
                 return '<object id="bplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="'.$width.'"'
                         . 'height="'.$height.'"><embed name="bplayer"'
-                        . 'src="http://bambuser.com/r/player.swf?username='.$channel.'" type="application/x-shockwave-flash"'
+                        . 'src="http://bambuser.com/r/player.swf?username='.urlencode($channel).'&context=b&autostart=no" type="application/x-shockwave-flash"'
                         . 'width="'.$width.'" height="'.$height.'" allowfullscreen="true" wmode="opaque"></embed><param '
-                        . 'name="movie" value="http://bambuser.com/r/player.swf?username='.$channel.'"></param><param '
+                        . 'name="movie" value="http://bambuser.com/r/player.swf?username='.urlencode($channel).'&context=b&autostart=no"></param><param '
                         . 'name="allowfullscreen" value="true"></param><param name="wmode" value="opaque"></param></object>';
             } else {
                 return '<object id="bplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="'.$width.'"'
                         . 'height="'.$height.'"><embed name="bplayer" src="http://static.bambuser.com/r/player.swf?vid='
-                        . $id.'" type="application/x-shockwave-flash" width="'.$width.'" height="'.$height.'"'
+                        . urlencode($id).'&context=b&autostart=no" type="application/x-shockwave-flash" width="'.$width.'" height="'.$height.'"'
                         . 'allowfullscreen="true" wmode="opaque"></embed><param name="movie" '
-                        . 'value="http://static.bambuser.com/r/player.swf?vid='.$id.'"></param><param name="allowfullscreen"'
+                        . 'value="http://static.bambuser.com/r/player.swf?vid='.urlencode($id).'&context=b&autostart=no"></param><param name="allowfullscreen"'
                         . 'value="true"></param><param name="wmode" value="opaque"></param></object>';
             }
         }
