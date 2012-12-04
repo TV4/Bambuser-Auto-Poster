@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.25
+Version: 0.26
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -16,8 +16,6 @@ License: GPL2
  * Parts of this program are based on "Bambuser for Wordpress - Shortcode" by Mattias Norell
  * released under the GPL2 license. Copyright (C) 2010 Mattias Norell
  *
- * Contains part of Joachim Kudish's "WordPress Github Plugin Updater"
- *  https://github.com/jkudish/WordPress-GitHub-Plugin-Updater
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -365,6 +363,72 @@ if (!class_exists('BambuserAutoposter')) {
             return '[bambuser id="' . $id . '"]';
         }
 
+        function fetch_feed_with_api_key($username)
+        {
+            $apikey = $this->o['secret_key'];
+            $username = urlencode($username);
+            if (!$apikey) {
+                return false;
+            }
+            if (false === ($json = get_transient("bambuser:$username"))) {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, "http://api.bambuser.com/broadcast.json?username=$username&api_key=$apikey");
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                    "Content-Type: application/json;charset=utf-8",
+                    "Accept: application/json"
+                ));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HEADER, 0);
+
+                $json = curl_exec($ch);
+
+                curl_close($ch);
+
+                $json = json_decode($json);
+                set_transient("bambuser:$username", $json, 7 * 86400);
+            }
+            return $json;
+        }
+        
+        function fetch_and_insert_with_api_key()
+        {
+            $last_save = intval(get_option('tv4se_bambuser_lastpub'));
+            $username  = $this->o['username'];
+            $feed      = $this->fetch_feed_with_api_key($username);
+            if ($feed && $feed->result) {
+                $maxitems = $this->o['maxposts'];
+                $items    = array_slice($feed->result, 0, $maxitems);
+                $counter  = 0;
+                foreach ($items as $item):
+                    $counter++;
+                    if (intval($item->created) > $last_save) {
+                        if ($counter == 1) {
+                            update_option('tv4se_bambuser_lastpub', intval($item->created));
+                        }
+                        if ($item->title == 'Untitled broadcast') {
+	                        $title = $this->o['default_title'];
+                        } else {
+	                        $title = $item->title;
+                        }
+                        $my_post = array(
+                            'post_title' => $title,
+                            'post_content' => '[bambuser id="' . $item->vid . '"]',
+                            'post_date' => date('Y-m-d H:i:s', intval($item->created) + get_option('gmt_offset') * 3600),
+                            'post_status' => 'publish',
+                            'post_author' => $this->o['postuser'],
+                            'post_category' => array(
+                                $this->o['category']
+                            )
+                        );
+                        $post_id = wp_insert_post($my_post);
+                    }
+                endforeach;
+            }
+        }
+
+        
+        
+
         function fetch_metadata($id)
         {
             $apikey = $this->o['secret_key'];
@@ -390,8 +454,16 @@ if (!class_exists('BambuserAutoposter')) {
             }
             return $json;
         }
+        
+        function fetch_and_insert() {
+	        if($this->o['secret_key']) {
+		    	$this->fetch_and_insert_with_api_key();    
+	        } else {
+		    	$this->fetch_and_insert_from_rss();    
+	        }
+        }
 
-        function fetch_and_insert()
+        function fetch_and_insert_from_rss()
         {
             $last_save = intval(get_option('tv4se_bambuser_lastpub'));
             $username  = $this->o['username'];
@@ -484,7 +556,7 @@ if ( is_admin() ) {
 		'github_url' => 'https://github.com/TV4/Bambuser-Auto-Poster',
 		'zip_url' => 'https://github.com/TV4/Bambuser-Auto-Poster/zipball/master',
 		'requires' => '3.0',
-		'tested' => '3.4.1',
+		'tested' => '3.4.2',
 		'readme' => 'README.md'
 	);
 	$github_updater = new WPGitHubUpdater($config);
