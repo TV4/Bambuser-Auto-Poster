@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.26
+Version: 0.27
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -370,7 +370,7 @@ if (!class_exists('BambuserAutoposter')) {
             if (!$apikey) {
                 return false;
             }
-            if (false === ($json = get_transient("bambuser:$username"))) {
+            if (false === ($json = get_transient("bambuser_api:$username"))) {
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, "http://api.bambuser.com/broadcast.json?username=$username&api_key=$apikey");
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -385,7 +385,7 @@ if (!class_exists('BambuserAutoposter')) {
                 curl_close($ch);
 
                 $json = json_decode($json);
-                set_transient("bambuser:$username", $json, 7 * 86400);
+                set_transient("bambuser_api:$username", $json, intval($this->o['interval']) * 60);
             }
             return $json;
         }
