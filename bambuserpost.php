@@ -4,7 +4,7 @@ Plugin Name: Bambuser Auto-Poster
 Plugin URI: http://github.com/TV4/Bambuser-Auto-Poster
 Description: Publish Bambuser videocasts on a blog
 Author: David Hall (TV4 AB), parts of code from Mattias Norell
-Version: 0.28
+Version: 0.29
 Author URI: http://www.tv4.se/
 License: GPL2
 */
@@ -515,14 +515,14 @@ if (!class_exists('BambuserAutoposter')) {
                 'id' => '',
                 'channel' => '',
                 'playlist' => 'hide',
-                'width' => '424',
-                'height' => '376'
+                'width' => '538',
+                'height' => '360'
             ), $atts));
 
-            if ($channel !== '' && $height == 376) {
+            if ($channel !== '' && $height == 360) {
                 $height = 500;
             }
-            if ($playlist == 'show' && $height == 376) {
+            if ($playlist == 'show' && $height == 360) {
                 $height = 500;
             }
 
